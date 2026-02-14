@@ -17,7 +17,7 @@ loginForm.addEventListener('submit', function(event) {
     };
 
     // Send a POST request to the server for login
-    fetch('http://localhost:8082/login', {
+    fetch('http://mayflowerparadise.cloud-ip.cc:8082/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -47,7 +47,7 @@ loginForm.addEventListener('submit', function(event) {
 function establishWebSocket() {
     // Create a new WebSocket connection.
     // The 'wss' protocol is used for secure WebSockets.
-    const socket = new WebSocket('ws://localhost:8081/chat');
+    const socket = new WebSocket('ws://mayflowerparadise.cloud-ip.cc:8081/chat');
 
     // Event listener for when the connection is opened
     socket.onopen = function(event) {
