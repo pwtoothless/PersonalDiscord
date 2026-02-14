@@ -17,7 +17,7 @@ loginForm.addEventListener('submit', function(event) {
     };
 
     // Send a POST request to the server for login
-    fetch('http://localhost:8080/login', {
+    fetch('http://localhost:8082/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
