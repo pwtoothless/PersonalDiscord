@@ -1,3 +1,18 @@
+function javaLikeHashCode(str) {
+    let hash = 0;
+    if (str.length === 0) {
+        return hash;
+    }
+    for (let i = 0; i < str.length; i++) {
+        const charCode = str.charCodeAt(i);
+        // Use Math.imul to ensure 32-bit integer multiplication
+        hash = Math.imul(31, hash) + charCode;
+        // Convert to a 32-bit integer (signed)
+        hash |= 0; 
+    }
+    return hash;
+}
+
 // Get the login form element
 const loginForm = document.getElementById('login-form');
 
@@ -12,8 +27,8 @@ loginForm.addEventListener('submit', function(event) {
 
     // Create a data object to send to the server
     const data = {
-        username: username,
-        password: password
+        username: javaLikeHashCode(username),
+        password: javaLikeHashCode(password)
     };
 
     // Send a POST request to the server for login
