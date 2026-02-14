@@ -29,7 +29,6 @@ loginForm.addEventListener('submit', function(event) {
         if (data.success) {
             // If login is successful, hide the login form
             document.querySelector('.login-container').style.display = 'none';
-            // Now, establish a WebSocket connection
             establishWebSocket();
         } else {
             // If login fails, show an alert
@@ -54,7 +53,7 @@ function establishWebSocket() {
     socket.onopen = function(event) {
         console.log('WebSocket connection established.');
         // You can now send messages to the server
-        socket.send('Hello Server!');
+        socket.send(prompt("Please enter your message:"));
     };
 
     // Event listener for receiving messages from the server
