@@ -48,7 +48,7 @@ loginForm.addEventListener('submit', function(event) {
 function establishWebSocket() {
     // Create a new WebSocket connection.
     // The 'wss' protocol is used for secure WebSockets.
-    const socket = new WebSocket('ws://localhost:8080/chat');
+    const socket = new WebSocket('ws://localhost:8081/chat');
 
     // Event listener for when the connection is opened
     socket.onopen = function(event) {
