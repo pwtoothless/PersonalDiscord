@@ -42,9 +42,10 @@ loginForm.addEventListener('submit', function(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // If login is successful, hide the login form
+            // Hide login, show glass app
             document.querySelector('.login-container').style.display = 'none';
-            establishWebSocket();
+            document.getElementById('app-wrapper').style.display = 'flex';
+            establishWebSocket(username); // Pass username to use later
         } else {
             // If login fails, show an alert
             alert('Login failed: ' + data.message);
@@ -59,38 +60,39 @@ loginForm.addEventListener('submit', function(event) {
 /**
  * Establishes a WebSocket connection to the server.
  */
-function establishWebSocket() {
-    // Create a new WebSocket connection.
-    // The 'wss' protocol is used for secure WebSockets.
+function establishWebSocket(username) {
     const socket = new WebSocket('ws://mayflowerparadise.cloud-ip.cc:8081/chat');
+    const chatInput = document.getElementById('chat-input');
+    const chatHistory = document.getElementById('chat-history');
 
-    // Event listener for when the connection is opened
+    // 1. Send message on Enter key
+    chatInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && chatInput.value.trim() !== '') {
+            socket.send(chatInput.value);
+            chatInput.value = ''; // Clear input after sending
+        }
+    });
+
     socket.onopen = function(event) {
         console.log('WebSocket connection established.');
-        // You can now send messages to the server
-        socket.send(prompt("Please enter your message:"));
     };
 
-    // Event listener for receiving messages from the server
+    // 2. Display incoming messages
     socket.onmessage = function(event) {
-        console.log('Message from server: ', event.data);
-        // Here you would handle incoming chat messages,
-        // and display them on the page.
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message';
+        msgDiv.textContent = event.data;
+        chatHistory.appendChild(msgDiv);
+        
+        // Auto-scroll to bottom
+        chatHistory.scrollTop = chatHistory.scrollHeight;
     };
 
-    // Event listener for handling errors
     socket.onerror = function(error) {
         console.error('WebSocket Error: ', error);
     };
 
-    // Event listener for when the connection is closed
     socket.onclose = function(event) {
-        if (event.wasClean) {
-            console.log(`WebSocket connection closed cleanly, code=${event.code} reason=${event.reason}`);
-        } else {
-            // e.g. server process killed or network down
-            // event.code is usually 1006 in this case
-            console.error('WebSocket connection died');
-        }
+        console.log('WebSocket connection closed.');
     };
 }
