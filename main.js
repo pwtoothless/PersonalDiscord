@@ -1,98 +1,140 @@
+let localAudioStream = null;
+const peerConnections = {}; 
+let socket = null;
+
 function javaLikeHashCode(str) {
     let hash = 0;
-    if (str.length === 0) {
-        return hash;
-    }
+    if (str.length === 0) return hash;
     for (let i = 0; i < str.length; i++) {
         const charCode = str.charCodeAt(i);
-        // Use Math.imul to ensure 32-bit integer multiplication
         hash = Math.imul(31, hash) + charCode;
-        // Convert to a 32-bit integer (signed)
         hash |= 0; 
     }
     return hash;
 }
 
-// Get the login form element
-const loginForm = document.getElementById('login-form');
-
-// Add an event listener for form submission
-loginForm.addEventListener('submit', function(event) {
-    // Prevent the default form submission behavior
+document.getElementById('login-form').addEventListener('submit', function(event) {
     event.preventDefault();
-
-    // Get the username and password from the form
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    // Create a data object to send to the server
     const data = {
         username: javaLikeHashCode(username),
         password: javaLikeHashCode(password)
     };
 
-    // Send a POST request to the server for login
     fetch('http://mayflowerparadise.cloud-ip.cc:8082/login', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Hide login, show glass app
             document.querySelector('.login-container').style.display = 'none';
             document.getElementById('app-wrapper').style.display = 'flex';
-            establishWebSocket(username); // Pass username to use later
+            establishWebSocket(username); 
         } else {
-            // If login fails, show an alert
             alert('Login failed: ' + data.message);
         }
     })
-    .catch(error => {
-        console.error('Error during login:', error);
-        alert('Error during login. Please try again later.');
-    });
+    .catch(error => console.error('Error:', error));
 });
 
-/**
- * Establishes a WebSocket connection to the server.
- */
+function joinVoiceChannel(channelName) {
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+            localAudioStream = stream;
+            socket.send(JSON.stringify({ type: 'join-voice', channel: channelName }));
+        })
+        .catch(err => alert("Microphone access denied."));
+}
+
+function createPeerConnection(targetUser) {
+    const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    const peer = new RTCPeerConnection(rtcConfig);
+
+    if (localAudioStream) {
+        localAudioStream.getTracks().forEach(track => peer.addTrack(track, localAudioStream));
+    }
+
+    peer.onicecandidate = (event) => {
+        if (event.candidate) {
+            socket.send(JSON.stringify({ type: 'webrtc-ice', target: targetUser, candidate: event.candidate }));
+        }
+    };
+
+    peer.ontrack = (event) => {
+        let audioEl = document.getElementById('audio-' + targetUser);
+        if (!audioEl) {
+            audioEl = document.createElement('audio');
+            audioEl.id = 'audio-' + targetUser;
+            audioEl.autoplay = true;
+            document.body.appendChild(audioEl);
+        }
+        audioEl.srcObject = event.streams[0];
+    };
+
+    peerConnections[targetUser] = peer;
+    return peer;
+}
+
 function establishWebSocket(username) {
-    const socket = new WebSocket('ws://mayflowerparadise.cloud-ip.cc:8081/chat');
+    socket = new WebSocket('ws://mayflowerparadise.cloud-ip.cc:8081');
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
+    const userList = document.getElementById('user-list');
 
-    // 1. Send message on Enter key
+    socket.onopen = () => socket.send(JSON.stringify({ type: 'join', username: username }));
+
     chatInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && chatInput.value.trim() !== '') {
-            socket.send(chatInput.value);
-            chatInput.value = ''; // Clear input after sending
+            socket.send(JSON.stringify({ type: 'chat', message: chatInput.value }));
+            chatInput.value = ''; 
         }
     });
 
-    socket.onopen = function(event) {
-        console.log('WebSocket connection established.');
-    };
+    socket.onmessage = async function(event) {
+        try {
+            const data = JSON.parse(event.data);
 
-    // 2. Display incoming messages
-    socket.onmessage = function(event) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'chat-message';
-        msgDiv.textContent = event.data;
-        chatHistory.appendChild(msgDiv);
-        
-        // Auto-scroll to bottom
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    };
-
-    socket.onerror = function(error) {
-        console.error('WebSocket Error: ', error);
-    };
-
-    socket.onclose = function(event) {
-        console.log('WebSocket connection closed.');
+            if (data.type === 'users') {
+                userList.innerHTML = '';
+                data.list.forEach(user => {
+                    const li = document.createElement('li');
+                    li.textContent = user;
+                    userList.appendChild(li);
+                });
+            } else if (data.type === 'chat') {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'chat-message';
+                msgDiv.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+                chatHistory.appendChild(msgDiv);
+                chatHistory.scrollTop = chatHistory.scrollHeight; 
+            } else if (data.type === 'voice-users') {
+                document.querySelectorAll('.channel-users').forEach(el => el.innerHTML = '');
+                for (const [channel, users] of Object.entries(data.channels)) {
+                    const userDiv = document.getElementById('voice-users-' + channel);
+                    if (userDiv && users.length > 0) userDiv.textContent = users.join(', ');
+                }
+            } else if (data.type === 'user-joined-voice') {
+                const peer = createPeerConnection(data.username);
+                const offer = await peer.createOffer();
+                await peer.setLocalDescription(offer);
+                socket.send(JSON.stringify({ type: 'webrtc-offer', target: data.username, offer: offer }));
+            } else if (data.type === 'webrtc-offer') {
+                const peer = createPeerConnection(data.sender);
+                await peer.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peer.createAnswer();
+                await peer.setLocalDescription(answer);
+                socket.send(JSON.stringify({ type: 'webrtc-answer', target: data.sender, answer: answer }));
+            } else if (data.type === 'webrtc-answer') {
+                const peer = peerConnections[data.sender];
+                await peer.setRemoteDescription(new RTCSessionDescription(data.answer));
+            } else if (data.type === 'webrtc-ice') {
+                const peer = peerConnections[data.sender];
+                if (peer) await peer.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        } catch (e) { console.error("Error processing message: ", e); }
     };
 }
