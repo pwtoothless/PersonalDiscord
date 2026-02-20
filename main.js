@@ -23,7 +23,7 @@ document.getElementById('login-form').addEventListener('submit', function(event)
         password: javaLikeHashCode(password)
     };
 
-    fetch('http://mayflowerparadise.cloud-ip.cc:8082/login', {
+    fetch('https://mayflowerparadise.cloud-ip.cc:8082/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -80,7 +80,7 @@ function createPeerConnection(targetUser) {
 }
 
 function establishWebSocket(username) {
-    socket = new WebSocket('ws://mayflowerparadise.cloud-ip.cc:8081');
+    socket = new WebSocket('wss://mayflowerparadise.cloud-ip.cc:8081');
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
     const userList = document.getElementById('user-list');
