@@ -44,26 +44,43 @@ document.getElementById('login-form').addEventListener('submit', function(event)
 
 // --- WebRTC Media Controls ---
 
-async function addStreamToPeers(stream) {
-    localStream = stream;
-    
-    // Show the modal and add your own video
+async function addStreamToPeers(newStream) {
     document.getElementById('video-modal').style.display = 'flex';
-    const localVideo = document.createElement('video');
-    localVideo.srcObject = stream;
-    localVideo.autoplay = true;
-    localVideo.muted = true; 
-    document.getElementById('video-grid').appendChild(localVideo);
+    
+    const videoTrack = newStream.getVideoTracks()[0];
+    if (!videoTrack) return;
 
+    // Show local video
+    let localVideo = document.getElementById('local-video');
+    if (!localVideo) {
+        localVideo = document.createElement('video');
+        localVideo.id = 'local-video';
+        localVideo.autoplay = true;
+        localVideo.muted = true;
+        document.getElementById('video-grid').appendChild(localVideo);
+    }
+    localVideo.srcObject = new MediaStream([videoTrack]);
+
+    // Merge video track into the existing local audio stream
+    if (localStream) {
+        const oldVideoTrack = localStream.getVideoTracks()[0];
+        if (oldVideoTrack) {
+            localStream.removeTrack(oldVideoTrack);
+            oldVideoTrack.stop();
+        }
+        localStream.addTrack(videoTrack);
+    } else {
+        localStream = newStream;
+    }
+
+    // Update peers
     for (const peer of Object.values(peerConnections)) {
-        stream.getTracks().forEach(track => {
-            const sender = peer.getSenders().find(s => s.track && s.track.kind === track.kind);
-            if (sender) {
-                sender.replaceTrack(track);
-            } else {
-                peer.addTrack(track, stream);
-            }
-        });
+        const sender = peer.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (sender) {
+            sender.replaceTrack(videoTrack);
+        } else {
+            peer.addTrack(videoTrack, localStream);
+        }
     }
 }
 
@@ -105,6 +122,9 @@ function createPeerConnection(targetUser) {
     // NEW: Tell the other person when we add a camera late
     peer.onnegotiationneeded = async () => {
         try {
+            // Prevent collisions if we are already processing a connection
+            if (peer.signalingState !== "stable") return;
+            
             const offer = await peer.createOffer();
             await peer.setLocalDescription(offer);
             socket.send(JSON.stringify({ type: 'webrtc-offer', target: targetUser, offer: peer.localDescription }));
@@ -118,22 +138,32 @@ function createPeerConnection(targetUser) {
     };
 
     peer.ontrack = (event) => {
-        let mediaEl = document.getElementById('media-' + targetUser);
-        if (!mediaEl) {
-            const hasVideo = event.streams[0].getVideoTracks().length > 0;
-            mediaEl = document.createElement(hasVideo ? 'video' : 'audio');
-            mediaEl.id = 'media-' + targetUser;
-            mediaEl.autoplay = true;
-            
-            if (hasVideo) {
-                // Show the modal and add their video
-                document.getElementById('video-modal').style.display = 'flex';
-                document.getElementById('video-grid').appendChild(mediaEl);
-            } else {
-                document.body.appendChild(mediaEl);
+        const track = event.track;
+        
+        if (track.kind === 'audio') {
+            let audioEl = document.getElementById('audio-' + targetUser);
+            if (!audioEl) {
+                audioEl = document.createElement('audio');
+                audioEl.id = 'audio-' + targetUser;
+                audioEl.autoplay = true;
+                document.body.appendChild(audioEl);
             }
+            // Explicitly package the track
+            if (!audioEl.srcObject) audioEl.srcObject = new MediaStream([track]);
+            
+        } else if (track.kind === 'video') {
+            let videoEl = document.getElementById('video-' + targetUser);
+            if (!videoEl) {
+                videoEl = document.createElement('video');
+                videoEl.id = 'video-' + targetUser;
+                videoEl.autoplay = true;
+                
+                document.getElementById('video-modal').style.display = 'flex';
+                document.getElementById('video-grid').appendChild(videoEl);
+            }
+            // Explicitly package the track
+            if (!videoEl.srcObject) videoEl.srcObject = new MediaStream([track]);
         }
-        mediaEl.srcObject = event.streams[0];
     };
 
     peerConnections[targetUser] = peer;
@@ -190,10 +220,7 @@ function establishWebSocket(username) {
                     if (userDiv && users.length > 0) userDiv.textContent = users.join(', ');
                 }
             } else if (data.type === 'user-joined-voice') {
-                const peer = createPeerConnection(data.username);
-                const offer = await peer.createOffer();
-                await peer.setLocalDescription(offer);
-                socket.send(JSON.stringify({ type: 'webrtc-offer', target: data.username, offer: offer }));
+                createPeerConnection(data.username);
             } else if (data.type === 'webrtc-offer') {
                 let peer = peerConnections[data.sender];
                 if (!peer) {
