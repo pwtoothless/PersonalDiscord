@@ -1,4 +1,4 @@
-let localAudioStream = null;
+let localStream = null;
 const peerConnections = {}; 
 let socket = null;
 
@@ -23,6 +23,7 @@ document.getElementById('login-form').addEventListener('submit', function(event)
         password: javaLikeHashCode(password)
     };
 
+    // Updated to use the secure HTTPS domain
     fetch('https://betterchat.cloudns.ch:8082/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,10 +42,53 @@ document.getElementById('login-form').addEventListener('submit', function(event)
     .catch(error => console.error('Error:', error));
 });
 
+// --- WebRTC Media Controls ---
+
+async function addStreamToPeers(stream) {
+    localStream = stream;
+    
+    const localVideo = document.createElement('video');
+    localVideo.srcObject = stream;
+    localVideo.autoplay = true;
+    localVideo.muted = true; 
+    localVideo.style.height = '150px';
+    localVideo.style.borderRadius = '10px';
+    document.getElementById('video-grid').appendChild(localVideo);
+
+    for (const peer of Object.values(peerConnections)) {
+        stream.getTracks().forEach(track => {
+            const sender = peer.getSenders().find(s => s.track && s.track.kind === track.kind);
+            if (sender) {
+                sender.replaceTrack(track);
+            } else {
+                peer.addTrack(track, stream);
+            }
+        });
+    }
+}
+
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        addStreamToPeers(stream);
+    } catch (err) {
+        alert("Camera access denied.");
+    }
+}
+
+async function startScreenShare() {
+    try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        addStreamToPeers(stream);
+    } catch (err) {
+        alert("Screen sharing canceled.");
+    }
+}
+
 function joinVoiceChannel(channelName) {
     navigator.mediaDevices.getUserMedia({ audio: true, video: false })
         .then(stream => {
-            localAudioStream = stream;
+            localStream = stream;
             socket.send(JSON.stringify({ type: 'join-voice', channel: channelName }));
         })
         .catch(err => alert("Microphone access denied."));
@@ -54,8 +98,8 @@ function createPeerConnection(targetUser) {
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
     const peer = new RTCPeerConnection(rtcConfig);
 
-    if (localAudioStream) {
-        localAudioStream.getTracks().forEach(track => peer.addTrack(track, localAudioStream));
+    if (localStream) {
+        localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
     }
 
     peer.onicecandidate = (event) => {
@@ -65,21 +109,31 @@ function createPeerConnection(targetUser) {
     };
 
     peer.ontrack = (event) => {
-        let audioEl = document.getElementById('audio-' + targetUser);
-        if (!audioEl) {
-            audioEl = document.createElement('audio');
-            audioEl.id = 'audio-' + targetUser;
-            audioEl.autoplay = true;
-            document.body.appendChild(audioEl);
+        let mediaEl = document.getElementById('media-' + targetUser);
+        if (!mediaEl) {
+            const hasVideo = event.streams[0].getVideoTracks().length > 0;
+            mediaEl = document.createElement(hasVideo ? 'video' : 'audio');
+            mediaEl.id = 'media-' + targetUser;
+            mediaEl.autoplay = true;
+            if (hasVideo) {
+                mediaEl.style.height = '150px';
+                mediaEl.style.borderRadius = '10px';
+                document.getElementById('video-grid').appendChild(mediaEl);
+            } else {
+                document.body.appendChild(mediaEl);
+            }
         }
-        audioEl.srcObject = event.streams[0];
+        mediaEl.srcObject = event.streams[0];
     };
 
     peerConnections[targetUser] = peer;
     return peer;
 }
 
+// --- WebSocket & Chat Logic ---
+
 function establishWebSocket(username) {
+    // Updated to use the secure WSS domain
     socket = new WebSocket('wss://betterchat.cloudns.ch:8081');
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
@@ -109,14 +163,11 @@ function establishWebSocket(username) {
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'chat-message';
                 
-                // Check if the message is a link to an image
                 const isImage = /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i.test(data.message);
                 
                 if (isImage) {
-                    // Show the image
                     msgDiv.innerHTML = `<strong>${data.username}:</strong><br><img src="${data.message}" style="max-width: 100%; border-radius: 10px; margin-top: 5px;">`;
                 } else {
-                    // Show normal text
                     msgDiv.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
                 }
                 
