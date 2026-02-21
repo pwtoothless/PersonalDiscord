@@ -23,7 +23,7 @@ document.getElementById('login-form').addEventListener('submit', function(event)
         password: javaLikeHashCode(password)
     };
 
-    fetch('https://mayflowerparadise.cloud-ip.cc:8082/login', {
+    fetch('https://betterchat.cloudns.ch:8082/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -80,7 +80,7 @@ function createPeerConnection(targetUser) {
 }
 
 function establishWebSocket(username) {
-    socket = new WebSocket('wss://mayflowerparadise.cloud-ip.cc:8081');
+    socket = new WebSocket('wss://betterchat.cloudns.ch:8081');
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
     const userList = document.getElementById('user-list');
@@ -108,7 +108,18 @@ function establishWebSocket(username) {
             } else if (data.type === 'chat') {
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'chat-message';
-                msgDiv.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+                
+                // Check if the message is a link to an image
+                const isImage = /\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i.test(data.message);
+                
+                if (isImage) {
+                    // Show the image
+                    msgDiv.innerHTML = `<strong>${data.username}:</strong><br><img src="${data.message}" style="max-width: 100%; border-radius: 10px; margin-top: 5px;">`;
+                } else {
+                    // Show normal text
+                    msgDiv.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+                }
+                
                 chatHistory.appendChild(msgDiv);
                 chatHistory.scrollTop = chatHistory.scrollHeight; 
             } else if (data.type === 'voice-users') {
