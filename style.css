@@ -53,3 +53,37 @@ button:hover { background-color: #0056b3; }
 .chat-message { background: rgba(255, 255, 255, 0.4); padding: 10px 15px; border-radius: 15px; margin-bottom: 10px; width: fit-content; max-width: 80%; }
 .input-area { padding: 20px; background: rgba(255, 255, 255, 0.1); border-top: 1px solid rgba(255, 255, 255, 0.2); }
 #chat-input { width: 100%; padding: 15px; border-radius: 20px; border: none; background: rgba(255, 255, 255, 0.5); outline: none; font-size: 16px; box-sizing: border-box; }
+
+.video-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+}
+
+.video-modal-content {
+    width: 80%; max-width: 900px; max-height: 80vh;
+    flex-direction: column; padding: 20px;
+    box-sizing: border-box;
+}
+
+.video-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 15px; color: #333; width: 100%;
+}
+
+.video-grid {
+    display: grid;
+    /* This automatically creates columns based on how many videos there are */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.video-grid video {
+    width: 100%; 
+    border-radius: 10px; 
+    background: #000;
+}

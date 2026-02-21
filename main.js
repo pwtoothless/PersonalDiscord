@@ -47,12 +47,12 @@ document.getElementById('login-form').addEventListener('submit', function(event)
 async function addStreamToPeers(stream) {
     localStream = stream;
     
+    // Show the modal and add your own video
+    document.getElementById('video-modal').style.display = 'flex';
     const localVideo = document.createElement('video');
     localVideo.srcObject = stream;
     localVideo.autoplay = true;
     localVideo.muted = true; 
-    localVideo.style.height = '150px';
-    localVideo.style.borderRadius = '10px';
     document.getElementById('video-grid').appendChild(localVideo);
 
     for (const peer of Object.values(peerConnections)) {
@@ -102,6 +102,15 @@ function createPeerConnection(targetUser) {
         localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
     }
 
+    // NEW: Tell the other person when we add a camera late
+    peer.onnegotiationneeded = async () => {
+        try {
+            const offer = await peer.createOffer();
+            await peer.setLocalDescription(offer);
+            socket.send(JSON.stringify({ type: 'webrtc-offer', target: targetUser, offer: peer.localDescription }));
+        } catch (e) { console.error(e); }
+    };
+
     peer.onicecandidate = (event) => {
         if (event.candidate) {
             socket.send(JSON.stringify({ type: 'webrtc-ice', target: targetUser, candidate: event.candidate }));
@@ -115,9 +124,10 @@ function createPeerConnection(targetUser) {
             mediaEl = document.createElement(hasVideo ? 'video' : 'audio');
             mediaEl.id = 'media-' + targetUser;
             mediaEl.autoplay = true;
+            
             if (hasVideo) {
-                mediaEl.style.height = '150px';
-                mediaEl.style.borderRadius = '10px';
+                // Show the modal and add their video
+                document.getElementById('video-modal').style.display = 'flex';
                 document.getElementById('video-grid').appendChild(mediaEl);
             } else {
                 document.body.appendChild(mediaEl);
@@ -185,11 +195,15 @@ function establishWebSocket(username) {
                 await peer.setLocalDescription(offer);
                 socket.send(JSON.stringify({ type: 'webrtc-offer', target: data.username, offer: offer }));
             } else if (data.type === 'webrtc-offer') {
-                const peer = createPeerConnection(data.sender);
+                let peer = peerConnections[data.sender];
+                if (!peer) {
+                    peer = createPeerConnection(data.sender);
+                }
+                
                 await peer.setRemoteDescription(new RTCSessionDescription(data.offer));
                 const answer = await peer.createAnswer();
                 await peer.setLocalDescription(answer);
-                socket.send(JSON.stringify({ type: 'webrtc-answer', target: data.sender, answer: answer }));
+                socket.send(JSON.stringify({ type: 'webrtc-answer', target: data.sender, answer: peer.localDescription }));
             } else if (data.type === 'webrtc-answer') {
                 const peer = peerConnections[data.sender];
                 await peer.setRemoteDescription(new RTCSessionDescription(data.answer));
