@@ -32,9 +32,25 @@ document.getElementById('login-form').addEventListener('submit', function(event)
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            document.querySelector('.login-container').style.display = 'none';
-            document.getElementById('app-wrapper').style.display = 'flex';
-            establishWebSocket(username); 
+            try {
+                document.getElementById('login-sound').play();
+            } catch (e) {
+                console.error("Could not play login sound:", e);
+            }
+            const loginContainer = document.querySelector('.login-container');
+            const appWrapper = document.getElementById('app-wrapper');
+
+            loginContainer.classList.add('fade-out');
+
+            setTimeout(() => {
+                loginContainer.style.display = 'none';
+                appWrapper.style.display = 'flex';
+                // We need to wait for the display property to be applied before adding the class
+                setTimeout(() => {
+                    appWrapper.classList.add('fade-in');
+                    establishWebSocket(username);
+                }, 10);
+            }, 500); // Match the CSS transition duration
         } else {
             alert('Login failed: ' + data.message);
         }

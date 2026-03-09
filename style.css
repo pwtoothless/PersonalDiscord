@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Noto Sans', sans-serif;
     background: linear-gradient(135deg, #fff 0%, #007bff 50%, #4490f8 100%);
     display: flex;
     justify-content: center;
@@ -27,6 +29,7 @@ button:hover { background-color: #0056b3; }
 
 .app-wrapper {
     width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
+    opacity: 0;
 }
 
 .glass-container {
@@ -93,4 +96,14 @@ button:hover { background-color: #0056b3; }
     width: 100%; 
     border-radius: 10px; 
     background: #000;
+}
+
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
+
+.fade-in {
+    opacity: 1;
+    transition: opacity 0.5s ease-in;
 }
