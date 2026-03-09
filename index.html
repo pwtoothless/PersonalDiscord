@@ -15,11 +15,11 @@
             </div>
             <div class="input-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <input type="text" id="username" name="username" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" required>
             </div>
             <div class="input-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" required>
             </div>
             <div style="text-align: center; margin-bottom: 1rem;">
                 <a href="register.html" style="color: #007bff; text-decoration: none;">Create an account</a>
@@ -67,6 +67,7 @@
             <div class="video-header">
                 <h3>Live Streams</h3>
                 <button onclick="document.getElementById('video-modal').style.display='none'">Hide</button>
+                <button id="toggle-video-view">Toggle View</button>
             </div>
                 <div id="video-grid" class="video-grid">
             </div>

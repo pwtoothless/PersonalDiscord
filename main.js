@@ -256,4 +256,13 @@ function establishWebSocket(username) {
             }
         } catch (e) { console.error("Error processing message: ", e); }
     };
+
+    document.getElementById('toggle-video-view').addEventListener('click', () => {
+        const videoGrid = document.getElementById('video-grid');
+        if (videoGrid.style.display === 'none') {
+            videoGrid.style.display = 'grid';
+        } else {
+            videoGrid.style.display = 'none';
+        }
+    });
 }
