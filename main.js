@@ -24,7 +24,7 @@ document.getElementById('login-form').addEventListener('submit', function(event)
     };
 
     // Updated to use the secure HTTPS domain
-    fetch('https://betterchat.cloudns.ch:8082/login', {
+    fetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -190,7 +190,7 @@ function createPeerConnection(targetUser) {
 
 function establishWebSocket(username) {
     // Updated to use the secure WSS domain
-    socket = new WebSocket('wss://betterchat.cloudns.ch:8081');
+    socket = new WebSocket('wss://betterchat.cloudns.ch/ws');
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
     const userList = document.getElementById('user-list');
