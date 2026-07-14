@@ -19,7 +19,7 @@ document.getElementById('register-form').addEventListener('submit', function(eve
         password: javaLikeHashCode(password)
     };
 
-    fetch('https://mayflowerparadise.cloud-ip.cc:8082/register', {
+    fetch('https://main.d2x2h8edu7kmss.amplifyapp.com:8082/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

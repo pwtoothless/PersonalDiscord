@@ -190,7 +190,7 @@ function createPeerConnection(targetUser) {
 
 function establishWebSocket(username) {
     // Updated to use the secure WSS domain
-    socket = new WebSocket('wss://betterchat.cloudns.ch/ws');
+    socket = new WebSocket('wss://main.d2x2h8edu7kmss.amplifyapp.com/ws');
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
     const userList = document.getElementById('user-list');
