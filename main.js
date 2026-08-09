@@ -189,8 +189,8 @@ function createPeerConnection(targetUser) {
 // --- WebSocket & Chat Logic ---
 
 function establishWebSocket(username) {
-    // Updated to use the secure WSS domain
-    socket = new WebSocket('wss://epigaea.mayflower-paradise.us/ws');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
     const userList = document.getElementById('user-list');

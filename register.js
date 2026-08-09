@@ -19,10 +19,10 @@ document.getElementById('register-form').addEventListener('submit', function(eve
         password: javaLikeHashCode(password)
     };
 
-    fetch('https://main.d2x2h8edu7kmss.amplifyapp.com:8082/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+    fetch('/api/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(data => {
