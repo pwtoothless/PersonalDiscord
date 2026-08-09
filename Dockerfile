@@ -7,4 +7,4 @@ COPY . .
 # Update Nginx to listen on port 443 to match your proxy config
 RUN sed -i 's/80/443/g' /etc/nginx/conf.d/default.conf
 
-EXPOSE 443
+EXPOSE 8083
