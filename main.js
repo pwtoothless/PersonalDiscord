@@ -135,7 +135,7 @@ function createPeerConnection(targetUser) {
         localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
     }
 
-    // NEW: Tell the other person when we add a camera late
+    // Tell the other person when we add a camera late
     peer.onnegotiationneeded = async () => {
         try {
             // Prevent collisions if we are already processing a connection
@@ -190,7 +190,7 @@ function createPeerConnection(targetUser) {
 
 function establishWebSocket(username) {
     // Updated to use the secure WSS domain
-    socket = new WebSocket('wss://main.d2x2h8edu7kmss.amplifyapp.com/ws');
+    socket = new WebSocket('wss://epigaea.mayflower-paradise.us/ws');
     const chatInput = document.getElementById('chat-input');
     const chatHistory = document.getElementById('chat-history');
     const userList = document.getElementById('user-list');
